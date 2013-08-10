@@ -93,9 +93,118 @@ function ST4_columns_head($defaults) {
 // TAXONOMIES: CATEGORIES (POSTS AND LINKS), TAGS AND CUSTOM TAXONOMIES  
 function ST4_columns_content_taxonomy($c, $column_name, $term_id) {  
     if ($column_name == 'current') {  
-      echo $term_id;
+      if (get_option("current_issue") == $term_id) { ?>
+        <button class="btn btn-block btn-success issuer-disabled" disabled="disabled" data-tax_id=<?php echo $term_id ?> data-root=<?php echo site_url(); ?>>Active</button>
+      <?php } else { ?>
+        <button class="btn btn-block btn-primary issuer-active" data-tax_id=<?php echo $term_id ?> data-root=<?php echo site_url(); ?>>Make Active</button>
+      <?php }
     }  
 }  
 
 add_filter('manage_edit-issue_columns', 'ST4_columns_head');  
 add_filter('manage_issue_custom_column', 'ST4_columns_content_taxonomy', 10, 3);  
+
+function issuer_make_endpoint() {
+  // register a JSON endpoint for the root
+  add_rewrite_endpoint("issuer", EP_ROOT);
+}
+add_action("init", "issuer_make_endpoint");
+function issuer_add_queryvars( $query_vars ) {  
+    $query_vars[] = 'issuer';  
+    return $query_vars;  
+}  
+add_filter( 'query_vars', 'issuer_add_queryvars' );
+
+function issuer_json_endpoint() {
+  global $wp_query;
+  if (!isset($wp_query->query_vars['issuer'])) {
+    return;
+  }
+
+  $issue = $_POST["issuer"];
+  update_option("current_issue", $issue);
+
+  header("Content-Type: application/json");
+
+  $response = Array( "response" => "success");
+  echo json_encode($response);
+  exit();
+}
+add_action( 'template_redirect', 'issuer_json_endpoint' );
+
+function issuer_endpoints_activate() {
+  issuer_make_endpoint();
+  flush_rewrite_rules();
+}
+register_activation_hook( __FILE__, 'issuer_endpoints_activate' );
+
+function issuer_deendpoints_activate() {
+  // flush rules on deactivate as well so they're not left hanging around uselessly
+  flush_rewrite_rules();
+}
+register_deactivation_hook( __FILE__, 'issuer_deendpoints_activate' );
+
+function current_issue($query=array()) {
+  if (get_option("current_issue") != 0) {
+    return array_merge($query, array("tax_query" => array( array( 
+      "taxonomy" => "issue",
+      "terms" => get_option("current_issue"),
+      "field" => "term_id")
+    )));
+  } else {
+    if (empty($query)) {
+      return "";
+    } else {
+      return $query;
+    }
+  }
+}
+
+function get_issue($query=array(), $issue_name=0, $issue_id=0) {
+  if ($issue_name = 0) {
+    // try get it from the query vars
+    if (isset($wp_query->query_vars['issue'])) {
+      $issue_name = $wp_qery->query_vars['issue'];
+    } elseif (isset($_GET["issue"])) {
+      // try get it from the post
+      $issue_id = $_GET["issue"];
+    } else {
+      if (empty($query)) {
+        return '';
+      } else {
+        return $query;
+      }
+        
+    }
+  }
+  if (empty($issue_name)) {
+    $issue_query = array("issue" => $issue_name);
+  } else {
+    $issue_query = array("tax_query" => array( array( 
+      "taxonomy" => "issue",
+      "terms" => $issue_id,
+      "field" => "term_id")
+    ));
+  }
+  if (!empty($query)) {
+    return array_merge($query, $issue_query);
+  } else {
+    return $issue_query;
+  }
+}
+
+function list_issues($limit=0, $orderby="term_id", $order="DESC") { 
+  $args = array(
+    'orderby'       => $orderby, 
+    'order'         => $order,
+    'number'        => (empty($limit) ? '' : $limit), 
+  );
+  $terms = get_terms("issue", $args); ?>
+  <ul class="issues-list">
+  <?php foreach ($terms as $term) { ?>
+    <li class="issue-item"><a href='<?php echo '/issues/' . $term->slug ?>'
+      title='View all posts in <?php echo $term->name ?>'><?php echo $term->name ?></a></li>
+  <?php } ?>
+  </ul>
+  <?php
+}
