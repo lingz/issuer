@@ -17,14 +17,14 @@ Or just use it straight if you have no existing query.
 $query = new WP_Query(current_issue());
 ```
 
-**For the taxonomy/archive pages**
+##For the taxonomy/archive pages
 
 There exists a function get_issue which returns the appropriate query.
 ```php
-get_issuek([$query, $issue_name, $issue_number]);
+get_issue([$query, $issue_name, $issue_number]);
 ```
 
-Wrap your query in the same way with get_issue(). Pass empty args where necessary.
+Wrap your query in the same way with `get_issue()`. Pass empty args where necessary.
 ```php
 // for the taxonomy / archive page
 $query = new WP_Query(get_issue());
@@ -49,7 +49,7 @@ This returns an `<ul class="issues-list">` with each element being a link contai
 
 ##Permalink Rewrite
 
-You can use %issue% in the post permalink to insert the issue slug.
+You can use `%issue%` in the post permalink to insert the issue slug.
 
 ##Hiding Issues
 
