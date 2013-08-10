@@ -68,6 +68,7 @@ function issue_permalink($permalink, $post_id, $leavename) {
 
 function issuer_setup() {
   add_option( "current_issue", 0);
+  add_option( "exclude_issues", array());
 }
 add_action("init", "issuer_setup");
 
@@ -92,11 +93,10 @@ function issuer_add_admin_scripts() {
 add_action( 'admin_enqueue_scripts', 'issuer_add_admin_scripts' );
 
 
-function ST4_columns_head($defaults) {  
+function issuer_edit_head($defaults) {  
     $defaults['current']  = 'Current';  
+    $defaults['issuer-hide']  = 'Hide';  
   
-    /* ADD ANOTHER COLUMN (OPTIONAL) */  
-    // $defaults['second_column'] = 'Second Column';  
   
     /* REMOVE DEFAULT CATEGORY COLUMN (OPTIONAL) */  
     // unset($defaults['categories']);  
@@ -107,19 +107,24 @@ function ST4_columns_head($defaults) {
     return $defaults;  
 }  
 
-// TAXONOMIES: CATEGORIES (POSTS AND LINKS), TAGS AND CUSTOM TAXONOMIES  
-function ST4_columns_content_taxonomy($c, $column_name, $term_id) {  
+function issuer_edit_column($c, $column_name, $term_id) {  
     if ($column_name == 'current') {  
       if (get_option("current_issue") == $term_id) { ?>
-        <button class="btn btn-block btn-success issuer-disabled" disabled="disabled" data-tax_id=<?php echo $term_id ?> data-root=<?php echo site_url(); ?>>Active</button>
+        <button class="btn btn-block btn-success issuer current-disabled" disabled="disabled" data-tax_id=<?php echo $term_id ?> data-root=<?php echo site_url(); ?>>Active</button>
       <?php } else { ?>
-        <button class="btn btn-block btn-primary issuer-active" data-tax_id=<?php echo $term_id ?> data-root=<?php echo site_url(); ?>>Make Active</button>
+        <button class="btn btn-block btn-primary issuer current-active" data-tax_id=<?php echo $term_id ?> data-root=<?php echo site_url(); ?>>Make Active</button>
       <?php }
-    }  
+    } elseif ($column_name == 'issuer-hide') {
+      if (in_array($term_id, get_option("exclude_issues"))) { ?>
+        <button class="btn btn-block btn-danger issuer exclude-disabled" data-tax_id=<?php echo $term_id ?> data-root=<?php echo site_url(); ?>>Hidden</button>
+      <?php } else { ?>
+        <button class="btn btn-block btn-warning issuer exclude-active" data-tax_id=<?php echo $term_id ?> data-root=<?php echo site_url(); ?>>Hide</button>
+      <?php }
+    }
 }  
 
-add_filter('manage_edit-issue_columns', 'ST4_columns_head');  
-add_filter('manage_issue_custom_column', 'ST4_columns_content_taxonomy', 10, 3);  
+add_filter('manage_edit-issue_columns', 'issuer_edit_head');  
+add_filter('manage_issue_custom_column', 'issuer_edit_column', 10, 3);  
 
 function issuer_make_endpoint() {
   // register a JSON endpoint for the root
@@ -138,28 +143,41 @@ function issuer_json_endpoint() {
     return;
   }
 
-  $issue = $_POST["issuer"];
-  update_option("current_issue", $issue);
+  $response = Array( "response" => "success");
+
+  if (isset($_POST["issuer_active"])) {
+    $issue = $_POST["issuer_active"];
+    update_option("current_issue", $issue);
+  } elseif  ($_POST["issuer_exclude"]) {
+    $issue = $_POST["issuer_exclude"];
+    $exclude = get_option("exclude_issues");
+    if (!in_array($issue, $exclude)) {
+      $exclude[] = $issue;
+      update_option("exclude_issues", $exclude);
+    } else {
+      $response = Array( "response" => "failure");
+    }
+  } elseif  ($_POST["issuer_include"]) {
+    $issue = $_POST["issuer_include"];
+    $exclude = get_option("exclude_issues");
+    if (($pos = array_search($issue, $exclude)) !== false) {
+      $exclude = get_option("exclude_issues");
+      unset($exclude[$pos]);
+      update_option("exclude_issues", $exclude);
+    } else {
+      $response = Array( "response" => "failure");
+    }
+  } else {
+    $response = Array( "response" => "failure");
+  }
 
   header("Content-Type: application/json");
 
-  $response = Array( "response" => "success");
   echo json_encode($response);
   exit();
 }
 add_action( 'template_redirect', 'issuer_json_endpoint' );
 
-function issuer_endpoints_activate() {
-  issuer_make_endpoint();
-  flush_rewrite_rules();
-}
-register_activation_hook( __FILE__, 'issuer_endpoints_activate' );
-
-function issuer_deendpoints_activate() {
-  // flush rules on deactivate as well so they're not left hanging around uselessly
-  flush_rewrite_rules();
-}
-register_deactivation_hook( __FILE__, 'issuer_deendpoints_activate' );
 
 function current_issue($query=array()) {
   if (get_option("current_issue") != 0) {
@@ -191,7 +209,6 @@ function get_issue($query=array(), $issue_name=0, $issue_id=0) {
       } else {
         return $query;
       }
-        
     }
   }
   if (empty($issue_name)) {
@@ -215,6 +232,7 @@ function list_issues($limit=0, $orderby="term_id", $order="DESC") {
     'orderby'       => $orderby, 
     'order'         => $order,
     'number'        => (empty($limit) ? '' : $limit), 
+    'exclude'       => get_option("exclude_issues")
   );
   $terms = get_terms("issue", $args); ?>
   <ul class="issues-list">
@@ -225,3 +243,18 @@ function list_issues($limit=0, $orderby="term_id", $order="DESC") {
   </ul>
   <?php
 }
+
+function issuer_endpoints_activate() {
+  global $wp_rewrite;
+  issuer_make_endpoint();
+  add_issue_taxonomy();
+  $wp_rewrite -> flush_rules();
+}
+register_activation_hook( __FILE__, 'issuer_endpoints_activate' );
+
+function issuer_deendpoints_activate() {
+  // flush rules on deactivate as well so they're not left hanging around uselessly
+  global $wp_rewrite;
+  $wp_rewrite -> flush_rules();
+}
+register_deactivation_hook( __FILE__, 'issuer_deendpoints_activate' );
