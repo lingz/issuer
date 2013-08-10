@@ -202,7 +202,7 @@ function list_issues($limit=0, $orderby="term_id", $order="DESC") {
   $terms = get_terms("issue", $args); ?>
   <ul class="issues-list">
   <?php foreach ($terms as $term) { ?>
-    <li class="issue-item"><a href='<?php echo '/issues/' . $term->slug ?>'
+    <li class="issue-item"><a href='<?php echo site_url() . '/issue/' . $term->slug ?>'
       title='View all posts in <?php echo $term->name ?>'><?php echo $term->name ?></a></li>
   <?php } ?>
   </ul>
