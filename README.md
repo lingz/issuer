@@ -51,6 +51,11 @@ This returns an `<ul class="issues-list">` with each element being a link contai
 
 You can use %issue% in the post permalink to insert the issue slug.
 
+##Hiding Issues
+
+The plugin allows you to hide issues also. To check if an issue is disabled just check if its ID is in the array
+returned by `get_option("exclude_issues")`.
+
 ##Manual
 
 You can operate manually also instead of using the included helpers, what this plugin does 
