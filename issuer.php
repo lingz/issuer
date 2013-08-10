@@ -42,12 +42,29 @@ function add_issue_taxonomy() {
     'show_ui'           => true,
     'show_admin_column' => true,
     'query_var'         => true,
-    'rewrite'           => array( 'slug' => 'issue' ),
+    'rewrite'           => array( 'slug' => false),
   );
 
   register_taxonomy( 'issue', array( 'post', 'page' ), $args );
 }
 add_action("init", "add_issue_taxonomy");
+add_filter('post_link', 'issue_permalink', 10, 3);
+add_filter('post_type_link', 'issue_permalink', 10, 3);
+ 
+function issue_permalink($permalink, $post_id, $leavename) {
+    if (strpos($permalink, '%issue%') === FALSE) return $permalink;
+     
+        // Get post
+        $post = get_post($post_id);
+        if (!$post) return $permalink;
+ 
+        // Get taxonomy terms
+        $terms = wp_get_object_terms($post->ID, 'issue');   
+        if (!is_wp_error($terms) && !empty($terms) && is_object($terms[0])) $taxonomy_slug = $terms[0]->slug;
+        else $taxonomy_slug = 'other';
+ 
+    return str_replace('%issue%', $taxonomy_slug, $permalink);
+}  
 
 function issuer_setup() {
   add_option( "current_issue", 0);
@@ -202,7 +219,7 @@ function list_issues($limit=0, $orderby="term_id", $order="DESC") {
   $terms = get_terms("issue", $args); ?>
   <ul class="issues-list">
   <?php foreach ($terms as $term) { ?>
-    <li class="issue-item"><a href='<?php echo site_url() . '/issue/' . $term->slug ?>'
+    <li class="issue-item"><a href='<?php echo site_url() . '/' . $term->slug ?>'
       title='View all posts in <?php echo $term->name ?>'><?php echo $term->name ?></a></li>
   <?php } ?>
   </ul>

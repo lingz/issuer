@@ -45,7 +45,11 @@ a `$limit` of 0 returns all issues, `$orderby` lets you specify term fields such
 and `$order` lets you specify `ASC` or `DESC`.
 
 This returns an `<ul class="issues-list">` with each element being a link contained in
-`<li class="issue-item"><a href='issue-link'>issue-name</a></li>`
+`<li class="issue-item"><a href='issue-link'>issue-name</a></li>`.
+
+##Permalink Rewrite
+
+You can use %issue% in the post permalink to insert the issue slug.
 
 ##Manual
 
