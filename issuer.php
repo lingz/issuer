@@ -83,7 +83,7 @@ function issuer_add_admin_scripts() {
 			);
 			wp_enqueue_script( 'issuer-js' );
     }
-    // Register CSS
+   //Register CSS
     wp_register_style(
       'issuer-bootstrap-css',
       plugins_url( '/css/bootstrap.min.css', __FILE__ )
