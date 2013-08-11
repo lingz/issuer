@@ -204,11 +204,7 @@ function get_issue($query=array(), $issue_name=0, $issue_id=0) {
       // try get it from the post
       $issue_id = $_GET["issue"];
     } else {
-      if (empty($query)) {
-        return '';
-      } else {
-        return $query;
-      }
+      $issue_id = get_option("current_issue");
     }
   }
   if (empty($issue_name)) {
