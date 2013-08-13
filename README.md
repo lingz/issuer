@@ -50,6 +50,8 @@ This returns an `<ul class="issues-list">` with each element being a link contai
 ##Permalink Rewrite
 
 You can use `%issue%` in the post permalink to insert the issue slug.
+But don't put this at the root, put something else there first, because wordpress has a bug that will break pages
+if you try put this custom permalink directly at the root.
 
 ##Hiding Issues
 
