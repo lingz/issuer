@@ -41,8 +41,7 @@ function add_issue_taxonomy() {
     'labels'            => $labels,
     'show_ui'           => true,
     'show_admin_column' => true,
-    'query_var'         => true,
-    'rewrite'           => array( 'slug' => false),
+    'query_var'         => true
   );
 
   register_taxonomy( 'issue', array( 'post', 'page' ), $args );
@@ -54,11 +53,11 @@ add_filter('post_type_link', 'issue_permalink', 10, 3);
 function issue_permalink($permalink, $post_id, $leavename) {
     if (strpos($permalink, '%issue%') === FALSE) return $permalink;
      
-        // Get post
+         //Get post
         $post = get_post($post_id);
         if (!$post) return $permalink;
  
-        // Get taxonomy terms
+         //Get taxonomy terms
         $terms = wp_get_object_terms($post->ID, 'issue');   
         if (!is_wp_error($terms) && !empty($terms) && is_object($terms[0])) $taxonomy_slug = $terms[0]->slug;
         else $taxonomy_slug = 'other';
@@ -97,12 +96,6 @@ function issuer_edit_head($defaults) {
     $defaults['current']  = 'Current';  
     $defaults['issuer-hide']  = 'Hide';  
   
-  
-    /* REMOVE DEFAULT CATEGORY COLUMN (OPTIONAL) */  
-    // unset($defaults['categories']);  
-  
-    /* TO GET DEFAULTS COLUMN NAMES: */  
-    // print_r($defaults);  
   
     return $defaults;  
 }  
