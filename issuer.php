@@ -188,6 +188,29 @@ function current_issue($query=array()) {
   }
 }
 
+function active_issue($query=array()) {
+  $issue = get_query_var('issue'); 
+  if (empty($issue) ) {
+    $issue = get_option("current_issue");
+    if (!empty($issue)) {
+      $issue = get_term_by("id", $issue, "issue")->slug;
+    }
+  }
+  if (!empty($issue)) {
+    return array_merge($query, array("tax_query" => array( array( 
+      "taxonomy" => "issue",
+      "terms" => $issue,
+      "field" => "slug")
+    )));
+  } else {
+    if (empty($query)) {
+      return "";
+    } else {
+      return $query;
+    }
+  }
+}
+
 function get_issue($query=array(), $issue_name=0, $issue_id=0) {
   if ($issue_name = 0) {
     // try get it from the query vars
